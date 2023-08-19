@@ -4,6 +4,9 @@ const UpdateActions = require('./actions')
 const UpdateFeedbacks = require('./feedbacks')
 const UpdateVariableDefinitions = require('./variables')
 
+const { spawnSync } = require('child_process')
+const cmd = '/opt/homebrew/bin/bscpylgtvcommand'
+
 class ModuleInstance extends InstanceBase {
 	constructor(internal) {
 		super(internal)
@@ -11,7 +14,6 @@ class ModuleInstance extends InstanceBase {
 
 	async init(config) {
 		this.config = config
-
 		this.updateStatus(InstanceStatus.Ok)
 
 		this.updateActions() // export actions
@@ -39,11 +41,19 @@ class ModuleInstance extends InstanceBase {
 			},
 			{
 				type: 'textinput',
-				id: 'port',
-				label: 'Target Port',
-				width: 4,
-				regex: Regex.PORT,
+				id: 'mac',
+				label: 'MAC ADDRESS',
+				width: 6,
 			},
+			{
+				type: 'textinput',
+				id: 'wol_ip',
+				label: 'Wake-On-LAN IP',
+				width: 6,
+				default: '255.255.255.255',
+				regex: Regex.IP,
+			},
+
 		]
 	}
 
@@ -57,6 +67,27 @@ class ModuleInstance extends InstanceBase {
 
 	updateVariableDefinitions() {
 		UpdateVariableDefinitions(this)
+	}
+
+
+	async callPython(args) {
+		let result = await spawnSync(cmd, args)
+		this.log('debug', 'Python return code: ' + result.status)
+		if (result.status == 1) {
+			this.log('error', result.stderr.toString())
+		}
+		else if (result.status == 0) {
+			let stdout = result.stdout.toString()
+			if (stdout.includes('imageUri')) {
+				this.log('info', stdout.match(/imageUri': '(.*)'/)[1])
+			}
+			else {
+				this.log('debug', result.stdout.toString())
+			}
+		}
+		else {
+			this.log('error', JSON.stringify(result))
+		}
 	}
 }
 
