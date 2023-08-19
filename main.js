@@ -5,7 +5,7 @@ const UpdateFeedbacks = require('./feedbacks')
 const UpdateVariableDefinitions = require('./variables')
 
 const { spawnSync } = require('child_process')
-const cmd = '/opt/homebrew/bin/bscpylgtvcommand'
+const cmd = '/opt/homebrew/bin/python3'
 
 class ModuleInstance extends InstanceBase {
 	constructor(internal) {
@@ -69,8 +69,8 @@ class ModuleInstance extends InstanceBase {
 		UpdateVariableDefinitions(this)
 	}
 
-
 	async callPython(args) {
+		args.unshift('main.py')
 		let result = await spawnSync(cmd, args)
 		this.log('debug', 'Python return code: ' + result.status)
 		if (result.status == 1) {
@@ -86,7 +86,7 @@ class ModuleInstance extends InstanceBase {
 			}
 		}
 		else {
-			this.log('error', JSON.stringify(result))
+			this.log('error', JSON.stringify(result.stderr.toString()))
 		}
 	}
 }
